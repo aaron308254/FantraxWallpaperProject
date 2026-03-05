@@ -501,7 +501,7 @@ if __name__ == "__main__":
     build_wallpaper(league)
 
     # Then refresh every day at 8 PM
-    schedule.every().day.at("20:00").do(build_wallpaper, league=league)
+    schedule.every().minute.do(build_wallpaper, league=league)
 
     print("Scheduler running. Press Ctrl+C to stop.")
     while True:
