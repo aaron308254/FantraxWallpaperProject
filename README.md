@@ -1,9 +1,11 @@
-# Fantrax API Project for NBA Weekly Points League
+# Fantrax Wallpaper Project for NBA Weekly Points League
+<img width="1920" height="1080" alt="fantasy_wallpaper" src="https://github.com/user-attachments/assets/6429fed3-3c8d-4885-be9a-22f47a755b6f" />
 
-A custom Python implementation for interacting with Fantrax NBA league data. This project includes specific stability patches for the `fantraxapi` library to handle initialization errors and data inconsistencies.
+A custom Python implementation for interacting with and building Wallpapers from Fantrax NBA league data. This project includes specific stability patches for the `fantraxapi` library to handle initialization errors and data inconsistencies.
 
 ## 🚀 Features
 * Automated league data retrieval.
+* Wallpaper building showing real-time Fantrax weekly period scores.
 * **Custom Patches:** Includes runtime fixes for `Roster` and `League` objects within the `fantraxapi` package.
 * **Environment Ready:** Fully configured with `venv` support and dependency tracking.
 
