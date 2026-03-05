@@ -266,7 +266,7 @@ def draw_position_column(draw: ImageDraw.ImageDraw,
                           scores: dict,          # {name: pts}
                           top_n: int,
                           x: int, y: int,
-                          col_w: int) -> int:
+                          col_w: int, topPlayers: dict) -> int:
     """Draw a position block, return the y-coordinate after the block."""
     f_title  = _load_font(22, bold=True)
     f_name   = _load_font(20)
@@ -285,7 +285,7 @@ def draw_position_column(draw: ImageDraw.ImageDraw,
     max_pts = max(scores.values()) if scores else 1
     row_h   = 52
     for i, (name, pts) in enumerate(scores.items()):
-        is_starter = i < top_n
+        is_starter = i < top_n or name in topPlayers
         bg_fill = (20, 28, 50) if is_starter else (14, 18, 34)
         outline_clr = color if is_starter else (28, 36, 58)
 
@@ -451,9 +451,9 @@ def build_wallpaper(league: League) -> None:
     fx = pad + col_w + gap
     cx = pad + (col_w + gap) * 2
 
-    gY_end = draw_position_column(draw, "GUARDS",   GUARD_CLR, guardSorted,   2, gx, col_y, col_w)
-    fY_end = draw_position_column(draw, "FORWARDS", FWD_CLR,   forwardSorted, 2, fx, col_y, col_w)
-    cY_end = draw_position_column(draw, "CENTERS",  CTR_CLR,   centerSorted,  1, cx, col_y, col_w)
+    gY_end = draw_position_column(draw, "GUARDS",   GUARD_CLR, guardSorted,   2, gx, col_y, col_w, topPlayers)
+    fY_end = draw_position_column(draw, "FORWARDS", FWD_CLR,   forwardSorted, 2, fx, col_y, col_w, topPlayers)
+    cY_end = draw_position_column(draw, "CENTERS",  CTR_CLR,   centerSorted,  1, cx, col_y, col_w, topPlayers)
 
     # ── Top players (rightmost column) ────────────────────────────────────
     tx = pad + (col_w + gap) * 3
