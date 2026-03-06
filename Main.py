@@ -123,6 +123,8 @@ Roster.__init__ = my_roster_init
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
+#Add League logo and logos of teams
+
 #ep9ipyv2mcc7u7iy
 #k534dho0mbsg4262
 LEAGUE_ID  = "znwhu9scmbsg41j3"
@@ -210,6 +212,26 @@ def make_background() -> Image.Image:
 
     return img
 
+def add_logo_watermark(img: Image.Image, logo_path: str, opacity: int = 40) -> None:
+    """Paste a faded logo centered in the background. opacity: 0-255"""
+    logo = Image.open(logo_path).convert("RGBA")
+
+    # Resize to something big but not overwhelming, e.g. 600px wide
+    target_w = 600
+    ratio = target_w / logo.width
+    logo = logo.resize((target_w, int(logo.height * ratio)), Image.LANCZOS)
+
+    # Apply opacity by scaling the alpha channel
+    r, g, b, a = logo.split()
+    a = a.point(lambda x: int(x * opacity / 255))
+    logo = Image.merge("RGBA", (r, g, b, a))
+
+    # Center it on the wallpaper
+    x = (W - logo.width) // 2
+    y = (H - logo.height)
+
+    img.paste(logo, (x, y), mask=logo)
+
 # ── Section: header ───────────────────────────────────────────────────────────
 
 def draw_header(draw: ImageDraw.ImageDraw, today: date,
@@ -224,7 +246,7 @@ def draw_header(draw: ImageDraw.ImageDraw, today: date,
     f_small = _load_font(26)
     f_label = _load_font(20)
 
-    draw.text((pad + 24, 48), "FANTASY HOOPS", font=f_big, fill=TEXT_WHITE)
+    draw.text((pad + 24, 48), "DYNASTY BASKETBALL LEAGUE", font=f_big, fill=TEXT_WHITE)
     day_str = f"{today.strftime('%A, %B')} {today.day} {today.strftime('%Y')}"
     draw.text((pad + 24, 122), day_str.upper(), font=f_small, fill=ACCENT)
 
@@ -310,9 +332,9 @@ def draw_position_column(draw: ImageDraw.ImageDraw,
         if any(player.name == name for player in league.team(MY_TEAM_ID).live_scores(date.today())):
             name_width = draw.textlength(short_name[:16], font=f_name)
             draw_rounded_rect(draw,
-                          (x + 46 + name_width + 4, y + 10, x + 46 + name_width + 28, y + row_h - 14),
+                          (x + 46 + name_width + 4, y + 10, x + 46 + name_width + 31, y + row_h - 15),
                           radius=4, fill=bg_fill, outline=ACCENT, width=2)
-            draw.text((x + 46 + name_width + 10, y + row_h // 2 - 2),
+            draw.text((x + 46 + name_width + 12, y + row_h // 2 - 2),
                     "P", font=f_name, fill=ACCENT2, anchor="lm")
 
         # Points
@@ -445,7 +467,9 @@ def build_wallpaper(league: League) -> None:
 
     print(f"[{datetime.now():%H:%M:%S}] Rendering wallpaper…")
 
-    img  = make_background()
+    img = make_background()
+    logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+    add_logo_watermark(img, logo_path, opacity=40)
     draw = ImageDraw.Draw(img)
 
     # ── Header ────────────────────────────────────────────────────────────────
