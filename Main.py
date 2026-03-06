@@ -123,6 +123,8 @@ Roster.__init__ = my_roster_init
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
+#ep9ipyv2mcc7u7iy
+#k534dho0mbsg4262
 LEAGUE_ID  = "znwhu9scmbsg41j3"
 MY_TEAM_ID = "ep9ipyv2mcc7u7iy"
 
@@ -303,6 +305,15 @@ def draw_position_column(draw: ImageDraw.ImageDraw,
         draw.text((x + 46, y + row_h // 2 - 2),
                   short_name[:16], font=f_name, fill=TEXT_WHITE if is_starter else TEXT_DIM,
                   anchor="lm")
+        
+        # "P" if currently Playing.
+        if any(player.name == name for player in league.team(MY_TEAM_ID).live_scores(date.today())):
+            name_width = draw.textlength(short_name[:16], font=f_name)
+            draw_rounded_rect(draw,
+                          (x + 46 + name_width + 4, y + 10, x + 46 + name_width + 28, y + row_h - 14),
+                          radius=4, fill=bg_fill, outline=ACCENT, width=2)
+            draw.text((x + 46 + name_width + 10, y + row_h // 2 - 2),
+                    "P", font=f_name, fill=ACCENT2, anchor="lm")
 
         # Points
         draw.text((x + col_w - 12, y + row_h // 2 - 2),
