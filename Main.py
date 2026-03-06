@@ -421,7 +421,7 @@ def fetch_data(league: League, today: date):
     bottomPlayers = dict(
         list(guardSorted.items())[2:] +
         list(forwardSorted.items())[2:] +
-        list(centerSorted.items())[2:]
+        list(centerSorted.items())[1:]
     )
     bottomSorted = srt(bottomPlayers)
     topPlayers   = srt(dict(
