@@ -518,9 +518,13 @@ def set_wallpaper(path: str) -> None:
         we_exe = we_exe.replace("wallpaper64.exe", "wallpaper32.exe")
 
     if os.path.exists(we_exe):
+        # Close current wallpaper to bust the cache
+        subprocess.run([we_exe, "-control", "closeAllWallpapers"])
+        time.sleep(1)  # Give WE a moment to fully unload
+        # Re-open the playlist with the fresh image
         subprocess.run([we_exe, "-control", "openPlaylist",
                         "-playlist", WE_PLAYLIST_NAME])
-        print(f"Wallpaper set via Wallpaper Engine.")
+        print("Wallpaper refreshed via Wallpaper Engine.")
     else:
         # Fallback: plain Windows API if WE isn't found
         import ctypes
@@ -536,7 +540,7 @@ if __name__ == "__main__":
     build_wallpaper(league)
 
     # Then refresh every day at 8 PM
-    schedule.every().minute.do(build_wallpaper, league=league)
+    schedule.every(5).minutes.do(build_wallpaper, league=league)
 
     print("Scheduler running. Press Ctrl+C to stop.")
     while True:
