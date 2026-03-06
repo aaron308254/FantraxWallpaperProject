@@ -519,15 +519,15 @@ def set_wallpaper(path: str) -> None:
 
     if os.path.exists(we_exe):
         # Close current wallpaper to bust the cache
-        subprocess.run([we_exe, "-control", "closeAllWallpapers"])
-        time.sleep(1)  # Give WE a moment to fully unload
+        subprocess.run([we_exe, "-control", "closeWallpaper"])
+        time.sleep(3)  # Give WE a moment to fully unload
         # Re-open the playlist with the fresh image
         subprocess.run([we_exe, "-control", "openPlaylist",
                         "-playlist", WE_PLAYLIST_NAME])
         print("Wallpaper refreshed via Wallpaper Engine.")
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, abs_path, 3)
     else:
         # Fallback: plain Windows API if WE isn't found
-        import ctypes
         ctypes.windll.user32.SystemParametersInfoW(20, 0, abs_path, 3)
         print(f"Wallpaper Engine not found, set via Windows API.")
 
