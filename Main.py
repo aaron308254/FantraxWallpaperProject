@@ -413,6 +413,18 @@ def fetch_data(league: League, today: date):
                 centerScores[player.name]  = centerScores.get(player.name, 0)  + player.points
         currDate += timedelta(days=1)
 
+    #Get all players on team's roster, if player.Name not in Scores dict, add with 0 points
+    roster = league.team_roster(MY_TEAM_ID).rows
+    for row in roster:
+        player = row.player
+        p = player.pos_short_name
+        if p == "G" and player.name not in guardScores:
+            guardScores[player.name]   = guardScores.get(player.name, 0)
+        elif p == "F" and player.name not in forwardScores:
+            forwardScores[player.name] = forwardScores.get(player.name, 0)
+        elif p == "C" and player.name not in centerScores:
+            centerScores[player.name]  = centerScores.get(player.name, 0)
+
     srt = lambda d: dict(sorted(d.items(), key=lambda i: i[1], reverse=True))
     guardSorted   = srt(guardScores)
     forwardSorted = srt(forwardScores)
