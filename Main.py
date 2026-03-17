@@ -188,7 +188,7 @@ def hex_bar(draw: ImageDraw.ImageDraw, x: int, y: int,
     filled = int(bar_w * min(value / max_val, 1.0)) if max_val else 0
     draw.rounded_rectangle([x, y, x + bar_w, y + bar_h],
                            radius=bar_h // 2, fill=(30, 35, 55))
-    if filled:
+    if filled > 0:
         draw.rounded_rectangle([x, y, x + filled, y + bar_h],
                                radius=bar_h // 2, fill=color)
         
