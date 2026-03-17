@@ -151,6 +151,12 @@ CTR_CLR    = (200, 100, 255)    # purple
 WIN_CLR    = (80,  220, 140)
 LOSE_CLR   = (255,  80,  80)
 
+# Playoff palette
+FIRE_GOLD   = (255, 200,  40)
+FIRE_ORANGE = (255, 110,  20)
+FIRE_RED    = (220,  40,  20)
+PLAYOFF_BG  = (22,  10,   4)
+
 # ── Font helpers ──────────────────────────────────────────────────────────────
 
 def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -185,7 +191,19 @@ def hex_bar(draw: ImageDraw.ImageDraw, x: int, y: int,
     if filled:
         draw.rounded_rectangle([x, y, x + filled, y + bar_h],
                                radius=bar_h // 2, fill=color)
-
+        
+# ── Trophy helper ─────────────────────────────────────────────────────────────
+ 
+def _draw_trophy(draw, cx, cy, size, color):
+    s = size
+    draw.ellipse([cx - s//2, cy - s, cx + s//2, cy], fill=color)
+    draw.rectangle([cx - s//8, cy, cx + s//8, cy + s//3], fill=color)
+    draw.rectangle([cx - s//2, cy + s//3, cx + s//2, cy + s//3 + s//8], fill=color)
+    draw.arc([cx - s*3//4, cy - s*3//4, cx - s//4, cy - s//8],
+             start=200, end=340, fill=color, width=max(2, s//10))
+    draw.arc([cx + s//4,   cy - s*3//4, cx + s*3//4, cy - s//8],
+             start=200, end=340, fill=color, width=max(2, s//10))
+    
 # ── Background ────────────────────────────────────────────────────────────────
 
 def make_background() -> Image.Image:
@@ -238,50 +256,142 @@ def draw_header(draw: ImageDraw.ImageDraw, today: date,
                 period: int, my_score: float, opp_score: float,
                 my_team_name: str, opp_team_name: str) -> None:
     pad = 60
+    is_playoffs = period > 22
 
-    # Gold accent bar
-    draw.rectangle([pad, 50, pad + 6, 130], fill=ACCENT)
+    if is_playoffs:
+        # ── Full-width dramatic banner gradient ───────────────────────────
+        banner_h = 210
+        for i in range(banner_h):
+            t = i / banner_h
+            r = int(PLAYOFF_BG[0] + (50 - PLAYOFF_BG[0]) * t)
+            g = int(PLAYOFF_BG[1] + (20 - PLAYOFF_BG[1]) * t)
+            b = int(PLAYOFF_BG[2] + (5  - PLAYOFF_BG[2]) * t)
+            draw.line([(0, i), (W, i)], fill=(r, g, b))
+ 
+        # Diagonal slash accents
+        for offset in range(0, W + 400, 160):
+            pts = [
+                (offset,                 0),
+                (offset + 55,            0),
+                (offset + 55 - banner_h, banner_h),
+                (offset      - banner_h, banner_h),
+            ]
+            draw.polygon(pts, fill=(38, 16, 3))
+ 
+        # Glowing side bars — three layers for bloom effect
+        for thickness, col in [(14, FIRE_GOLD), (30, FIRE_ORANGE), (55, (60, 20, 5))]:
+            draw.rectangle([0,           0, thickness,  banner_h], fill=col)
+            draw.rectangle([W-thickness, 0, W,          banner_h], fill=col)
+ 
+        # ── "PLAYOFFS" with layered glow shadows ──────────────────────────
+        f_playoffs = _load_font(90, bold=True)
+        f_league   = _load_font(28, bold=True)
+        f_date     = _load_font(22)
+ 
+        for ox, oy, col in [
+            ( 4,  5, (100, 30,  0)),
+            (-4,  5, (100, 30,  0)),
+            ( 0,  6, ( 60, 15,  0)),
+            ( 2,  2, (200, 90, 10)),
+            ( 0,  0, FIRE_GOLD),
+        ]:
+            draw.text((pad + 24 + ox, 14 + oy), "PLAYOFFS", font=f_playoffs, fill=col)
+ 
+        # Gold underline beneath "PLAYOFFS"
+        playoffs_w = int(draw.textlength("PLAYOFFS", font=f_playoffs))
+        draw.rectangle([pad + 24, 108, pad + 24 + playoffs_w, 113], fill=FIRE_ORANGE)
+ 
+        draw.text((pad + 24, 118), "DYNASTY BASKETBALL LEAGUE",
+                  font=f_league, fill=FIRE_ORANGE)
+        day_str = f"{today.strftime('%A, %B')} {today.day} {today.strftime('%Y')}"
+        draw.text((pad + 24, 152), day_str.upper(), font=f_date, fill=(190, 140, 60))
+ 
+        # ── Trophy + round badge ───────────────────────────────────────────
+        bx1, by1, bx2, by2 = W - 310, 12, W - pad, 200
+        draw_rounded_rect(draw, (bx1, by1, bx2, by2),
+                        radius=16, fill=(28, 10, 2), outline=FIRE_GOLD, width=3)
+        draw_rounded_rect(draw, (bx1+4, by1+4, bx2-4, by2-4),
+                        radius=13, fill=None, outline=(80, 35, 5), width=1)
 
-    f_big   = _load_font(64, bold=True)
-    f_small = _load_font(26)
-    f_label = _load_font(20)
+        mid_x = (bx1 + bx2) // 2
 
-    draw.text((pad + 24, 48), "DYNASTY BASKETBALL LEAGUE", font=f_big, fill=TEXT_WHITE)
-    day_str = f"{today.strftime('%A, %B')} {today.day} {today.strftime('%Y')}"
-    draw.text((pad + 24, 122), day_str.upper(), font=f_small, fill=ACCENT)
+        round_num   = period - 22
+        round_label = {1: "QUARTERFINALS", 2: "SEMIFINALS", 3: "THE FINALS"}.get(round_num, f"ROUND {round_num}")
 
-    # Period badge
-    draw_rounded_rect(draw, (W - 260, 50, W - pad, 120),
-                      radius=14, fill=(20, 28, 50), outline=ACCENT, width=2)
-    draw.text((W - 160, 85), f"WEEK {period}", font=_load_font(30, bold=True),
-              fill=ACCENT, anchor="mm")
+        draw.text((mid_x, by1 + 50), f"ROUND {round_num}",
+                font=_load_font(26, bold=True), fill=FIRE_GOLD, anchor="mm")
+        draw.text((mid_x, by1 + 82), round_label,
+                font=_load_font(18), fill=FIRE_ORANGE, anchor="mm")
 
-    # Scoreboard strip
-    strip_y = 155
-    draw_rounded_rect(draw, (pad, strip_y, W - pad, strip_y + 80),
-                      radius=16, fill=(16, 24, 44), outline=(30, 40, 70), width=1)
+        # Trophy centered below the text
+        _draw_trophy(draw, mid_x, by1 + 150, 32, FIRE_GOLD)
+ 
+        # ── High-stakes scoreboard strip ──────────────────────────────────
+        strip_y  = 218
+        my_col   = FIRE_GOLD if my_score >= opp_score else (160, 70, 30)
+        opp_col  = FIRE_GOLD if opp_score >  my_score else (160, 70, 30)
+        draw_rounded_rect(draw, (pad, strip_y, W - pad, strip_y + 88),
+                          radius=16, fill=(20, 8, 2), outline=FIRE_GOLD, width=2)
+ 
+        cx         = W // 2
+        score_font = _load_font(52, bold=True)
+        name_font  = _load_font(22)
+ 
+        draw.text((pad + 140, strip_y + 44), f"{my_score:.1f}",
+                  font=score_font, fill=my_col, anchor="rm")
+        draw.text((pad + 145, strip_y + 44), my_team_name.upper(),
+                  font=name_font, fill=(190, 130, 60), anchor="lm")
+        draw.text((cx, strip_y + 44), "VS",
+                  font=_load_font(34, bold=True), fill=FIRE_ORANGE, anchor="mm")
+        draw.text((W - pad - 140, strip_y + 44), f"{opp_score:.1f}",
+                  font=score_font, fill=opp_col, anchor="lm")
+        draw.text((W - pad - 145, strip_y + 44), opp_team_name.upper(),
+                  font=name_font, fill=(190, 130, 60), anchor="rm")
 
-    cx = W // 2
-    score_font  = _load_font(46, bold=True)
-    name_font   = _load_font(22)
-    vs_font     = _load_font(28)
+    else:
+        # Gold accent bar
+        draw.rectangle([pad, 50, pad + 6, 130], fill=ACCENT)
 
-    # My team
-    draw.text((pad+140, strip_y + 40), f"{my_score:.1f}",
-              font=score_font, fill=WIN_CLR if my_score >= opp_score else TEXT_WHITE,
-              anchor="rm", align="left")
-    draw.text((pad+145, strip_y + 40), my_team_name.upper(),
-              font=name_font, fill=TEXT_DIM, anchor="lm", align="left")   # crude: just show under
+        f_big   = _load_font(64, bold=True)
+        f_small = _load_font(26)
+        f_label = _load_font(20)
 
-    # VS
-    draw.text((cx, strip_y + 40), "VS", font=vs_font, fill=TEXT_DIM, anchor="mm")
+        draw.text((pad + 24, 48), "DYNASTY BASKETBALL LEAGUE", font=f_big, fill=TEXT_WHITE)
+        day_str = f"{today.strftime('%A, %B')} {today.day} {today.strftime('%Y')}"
+        draw.text((pad + 24, 122), day_str.upper(), font=f_small, fill=ACCENT)
 
-    # Opponent
-    draw.text((W-pad-140, strip_y + 40), f"{opp_score:.1f}",
-              font=score_font, fill=WIN_CLR if opp_score > my_score else TEXT_WHITE,
-              anchor="lm", align="right")
-    draw.text((W-pad-145, strip_y + 40), opp_team_name.upper(),
-              font=name_font, fill=TEXT_DIM, anchor="rm", align="right")
+        # Period badge
+        draw_rounded_rect(draw, (W - 260, 50, W - pad, 120),
+                        radius=14, fill=(20, 28, 50), outline=ACCENT, width=2)
+        draw.text((W - 160, 85), f"WEEK {period}", font=_load_font(30, bold=True),
+                fill=ACCENT, anchor="mm")
+
+        # Scoreboard strip
+        strip_y = 155
+        draw_rounded_rect(draw, (pad, strip_y, W - pad, strip_y + 80),
+                        radius=16, fill=(16, 24, 44), outline=(30, 40, 70), width=1)
+
+        cx = W // 2
+        score_font  = _load_font(46, bold=True)
+        name_font   = _load_font(22)
+        vs_font     = _load_font(28)
+
+        # My team
+        draw.text((pad+140, strip_y + 40), f"{my_score:.1f}",
+                font=score_font, fill=WIN_CLR if my_score >= opp_score else TEXT_WHITE,
+                anchor="rm", align="left")
+        draw.text((pad+145, strip_y + 40), my_team_name.upper(),
+                font=name_font, fill=TEXT_DIM, anchor="lm", align="left")   # crude: just show under
+
+        # VS
+        draw.text((cx, strip_y + 40), "VS", font=vs_font, fill=TEXT_DIM, anchor="mm")
+
+        # Opponent
+        draw.text((W-pad-140, strip_y + 40), f"{opp_score:.1f}",
+                font=score_font, fill=WIN_CLR if opp_score > my_score else TEXT_WHITE,
+                anchor="lm", align="right")
+        draw.text((W-pad-145, strip_y + 40), opp_team_name.upper(),
+                font=name_font, fill=TEXT_DIM, anchor="rm", align="right")
 
 # ── Section: position column ──────────────────────────────────────────────────
 
@@ -365,6 +475,7 @@ def draw_top_players(draw: ImageDraw.ImageDraw,
     y += 42
 
     max_pts = max(top_players.values()) if top_players else 1
+    max_pts = max(max_pts, 1)
     for rank, (name, pts) in enumerate(top_players.items()):
         pct = pts / max_pts
         bar_w = int((col_w - 20) * pct)
@@ -387,6 +498,47 @@ def draw_top_players(draw: ImageDraw.ImageDraw,
         y += 54
 
 # ── Data fetching ─────────────────────────────────────────────────────────────
+def getOpponentPlayoffScore(league: League, today: date, currDate: date, teamID: str):
+    guardScores   = {}
+    forwardScores = {}
+    centerScores  = {}
+
+    while currDate <= today:
+        try:
+            live = league.live_scores(currDate)[teamID]
+        except (KeyError, DateNotInSeason):
+            currDate += timedelta(days=1)
+            continue
+        for player in live:
+            p = player.pos_short_name
+            if p == "G":
+                guardScores[player.name]   = max(guardScores.get(player.name, 0), player.points)
+            elif p == "F":
+                forwardScores[player.name] = max(forwardScores.get(player.name, 0), player.points)
+            elif p == "C":
+                centerScores[player.name] = max(centerScores.get(player.name, 0), player.points)
+        currDate += timedelta(days=1)
+    srt = lambda d: dict(sorted(d.items(), key=lambda i: i[1], reverse=True))
+    guardSorted   = srt(guardScores)
+    forwardSorted = srt(forwardScores)
+    centerSorted  = srt(centerScores)
+
+    bottomPlayers = dict(
+        list(guardSorted.items())[2:] +
+        list(forwardSorted.items())[2:] +
+        list(centerSorted.items())[1:]
+    )
+    bottomSorted = srt(bottomPlayers)
+    topPlayers   = srt(dict(
+        list(guardSorted.items())[:2] +
+        list(forwardSorted.items())[:2] +
+        list(centerSorted.items())[:1] +
+        list(bottomSorted.items())[:2]
+    ))
+    opp_score = 0.0
+    for player, score in topPlayers.items():
+        opp_score += score
+    return opp_score
 
 def fetch_data(league: League, today: date):
     guardScores   = {}
@@ -394,7 +546,8 @@ def fetch_data(league: League, today: date):
     centerScores  = {}
 
     period_num   = league.scoring_dates[today]
-    period_start = league.scoring_period_results(True, False)[period_num].start
+    isPlayoffs = period_num > 22
+    period_start = league.scoring_period_results(True, isPlayoffs)[period_num].start
     currDate     = period_start
 
     while currDate <= today:
@@ -406,11 +559,20 @@ def fetch_data(league: League, today: date):
         for player in live:
             p = player.pos_short_name
             if p == "G":
-                guardScores[player.name]   = guardScores.get(player.name, 0)   + player.points
+                if isPlayoffs:
+                    guardScores[player.name]   = max(guardScores.get(player.name, 0), player.points)
+                else:
+                    guardScores[player.name]   = guardScores.get(player.name, 0)   + player.points
             elif p == "F":
-                forwardScores[player.name] = forwardScores.get(player.name, 0) + player.points
+                if isPlayoffs:
+                    forwardScores[player.name] = max(forwardScores.get(player.name, 0), player.points)
+                else:
+                    forwardScores[player.name] = forwardScores.get(player.name, 0) + player.points
             elif p == "C":
-                centerScores[player.name]  = centerScores.get(player.name, 0)  + player.points
+                if isPlayoffs:
+                    centerScores[player.name] = max(centerScores.get(player.name, 0), player.points)
+                else:
+                    centerScores[player.name]  = centerScores.get(player.name, 0)  + player.points
         currDate += timedelta(days=1)
 
     #Get all players on team's roster, if player.Name not in Scores dict, add with 0 points
@@ -448,21 +610,37 @@ def fetch_data(league: League, today: date):
     opp_score  = 0.0
     my_name    = "My Team"
     opp_name   = "Opponent"
-    try:
-        results = league.scoring_period_results(True, False)[period_num]
+    opp_ID     = ""
+    if isPlayoffs:
+        results = league.scoring_period_results(True, True)[period_num]
         for matchup in results.matchups:
             if matchup.home.id == MY_TEAM_ID:
-                my_score  = matchup.home_score
-                opp_score = matchup.away_score
                 my_name   = matchup.home.name
                 opp_name  = matchup.away.name
+                opp_ID    = matchup.away.id
             elif matchup.away.id == MY_TEAM_ID:
-                my_score  = matchup.away_score
-                opp_score = matchup.home_score
                 my_name   = matchup.away.name
                 opp_name  = matchup.home.name
-    except Exception:
-        pass
+                opp_ID    = matchup.home.id
+        for player, score in topPlayers.items():
+            my_score += score
+        opp_score = getOpponentPlayoffScore(league, today, period_start, opp_ID)
+    else:
+        try:
+            results = league.scoring_period_results(True, False)[period_num]
+            for matchup in results.matchups:
+                if matchup.home.id == MY_TEAM_ID:
+                    my_score  = matchup.home_score
+                    opp_score = matchup.away_score
+                    my_name   = matchup.home.name
+                    opp_name  = matchup.away.name
+                elif matchup.away.id == MY_TEAM_ID:
+                    my_score  = matchup.away_score
+                    opp_score = matchup.home_score
+                    my_name   = matchup.away.name
+                    opp_name  = matchup.home.name
+        except Exception:
+            pass
 
     return (guardSorted, forwardSorted, centerSorted,
             topPlayers, my_score, opp_score, my_name, opp_name, period_num)
@@ -476,6 +654,8 @@ def build_wallpaper(league: League) -> None:
     (guardSorted, forwardSorted, centerSorted,
      topPlayers, my_score, opp_score,
      my_name, opp_name, period_num) = fetch_data(league, today)
+    
+    is_playoffs = period_num > 22
 
     print(f"[{datetime.now():%H:%M:%S}] Rendering wallpaper…")
 
@@ -491,7 +671,7 @@ def build_wallpaper(league: League) -> None:
     # ── Three position columns ─────────────────────────────────────────────
     pad    = 60
     col_w  = (W - pad * 2 - 40 * 2) // 4   # 4 columns total
-    col_y  = 270
+    col_y = 320 if is_playoffs else 270   # push columns down to clear taller playoff header
     gap    = 40
 
     gx = pad
