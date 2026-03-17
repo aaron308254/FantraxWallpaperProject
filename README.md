@@ -54,3 +54,47 @@ Ensure your credentials are set up (league_id and myTeamID), then run:
 ```
 python main.py
 ```
+
+## ⏰ Running Automatically on Windows Startup (Task Scheduler)
+
+To have the wallpaper script launch automatically whenever you log into Windows, without needing to open a terminal or VSCode, you can set it up as a scheduled task.
+
+**1. Open Task Scheduler**
+
+Press `Win + R`, type `taskschd.msc`, and press Enter.
+
+**2. Create a New Task**
+
+In the right-hand panel, click **Create Task** (not "Create Basic Task" — this gives you access to all settings upfront).
+
+**3. Set the Trigger**
+
+Go to the **Triggers** tab → click **New**.
+- Set **Begin the task** to `At log on`
+- Optionally check **Delay task for** and set it to `30 seconds` to give your network time to fully initialize before the script runs
+- Click OK
+
+**4. Set the Action**
+
+Go to the **Actions** tab → click **New** → set **Action** to `Start a program`, then fill in the three fields:
+
+| Field | Value |
+|---|---|
+| Program/script | `C:\Users\YourName\FantraxWallpaperProject\.venv\Scripts\pythonw.exe` |
+| Add arguments | `Main.py` |
+| Start in | `C:\Users\YourName\FantraxWallpaperProject` |
+
+> **Note:** Use `pythonw.exe` instead of `python.exe` so the script runs silently in the background with no terminal window. Make sure the paths match your actual install location.
+
+**5. Set Network Condition**
+
+Go to the **Conditions** tab and under the **Network** section, check:
+- ✅ **Start only if the following network connection is available** → set to `Any connection`
+
+This ensures the script waits for an internet connection before attempting to fetch data from Fantrax.
+
+**6. Save the Task**
+
+Click **OK**. You may be prompted to enter your Windows password to save the task.
+
+The script will now launch automatically every time you log in, refresh the wallpaper immediately, and continue updating every 5 minutes in the background. To verify it is running, open **Task Manager → Details** and look for `pythonw.exe`.
